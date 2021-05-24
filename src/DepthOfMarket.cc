@@ -29,12 +29,12 @@ void DepthOfMarket::AddLevel(std::uint8_t type,
 
 void DepthOfMarket::ChangeLevel(std::uint8_t type,
                                 float price,
-                                std::uint32_t add_volume) {
+                                std::uint32_t new_volume) {
   auto &target = GetLevelsByType(type);
   if (!target.contains(price)) {
     throw std::runtime_error("Error: value no exit");
   }
-  target.at(price) += add_volume;
+  target.at(price) = new_volume;
 }
 
 void DepthOfMarket::EraseLevel(std::uint8_t type, float price) {
@@ -44,14 +44,22 @@ void DepthOfMarket::EraseLevel(std::uint8_t type, float price) {
 
 void DepthOfMarket::PrintLevels(std::uint8_t type) {
   auto &target = GetLevelsByType(type);
+  auto print = [](auto& iter) {
+    std::cout.width(15);
+    std::cout << iter.first << std::internal;
+    std::cout.width(15);
+    std::cout << iter.second << std::endl;
+  };
   if (type == DepthOfMarket::Types::SELL_CODE) {
     for (const auto &item : target) {
-      std::cout << " SELL\t" << item.first << "\t\t" << item.second << std::endl;
+      std::cout << "SELL" << std::internal;
+      print(item);
     }
   } else {
     auto current = target.crbegin();
     for (;current < target.crend(); ++current){
-      std::cout << " BUY\t" << (*current).first << "\t\t" << (*current).second << std::endl;
+      std::cout << "BUY " << std::internal;
+      print(*current);
     }
   }
 }

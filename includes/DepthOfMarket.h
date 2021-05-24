@@ -23,7 +23,7 @@ class DepthOfMarket {
   DepthOfMarket& operator=(DepthOfMarket&& other) noexcept = delete;
   ~DepthOfMarket() = default;
   void AddLevel(std::uint8_t type, float price, std::uint32_t volume);
-  void ChangeLevel(std::uint8_t type, float price, std::uint32_t add_volume);
+  void ChangeLevel(std::uint8_t type, float price, std::uint32_t new_volume);
   void EraseLevel(std::uint8_t type, float price);
   void PrintLevels(std::uint8_t type);
  private:
