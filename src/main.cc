@@ -5,63 +5,81 @@
 #include <random>
 #include <iostream>
 #include <map>
+#include <thread>
 #include "includes/DepthOfMarket.h"
+#include "includes/LogDuration.h"
 
-using namespace std;
-using namespace std::chrono;
+/*
+ * Также есть вариант реализации на std::map, она будет работать быстрее, так как
+ * она является красно - черным деревом, вставка и удаление за log n
+ * Но так как в биржевом стакане также важна итерация по уровням, я решил использовать
+ * ассоциативный упорядоченный вектор boost::flat_map, который уступает
+ * std::map в удалении элементов и их добавлении, однако итерация в разы быстрее.
+ *
+ * PS Также для роста производительности я закомментировал try catch в функциях.
+ */
+constexpr std::uint32_t FLOAT_MIN = 0;
+constexpr std::uint32_t FLOAT_MAX = 100;
 
-class LogDuration {
- public:
-  explicit LogDuration(const string& msg = "")
-      : message(msg + ": ")
-      , start(steady_clock::now())
+static std::shared_ptr<std::vector<std::tuple<std::uint32_t, float, std::uint32_t>>> CreateRandValue(std::uint32_t size) {
+  std::random_device rd;
+  std::default_random_engine eng(rd());
+  std::map<float, std::tuple<std::uint32_t, std::uint32_t>> rand_value;
+  for (std::uint32_t n = 0; n < size; ++n) {
+    std::uniform_int_distribution<std::uint32_t> type_range(0, 1);
+    std::uint32_t type = type_range(eng);
+    std::uniform_int_distribution<std::uint32_t> type_volume(50, 10000);
+    std::uint32_t volume = type_volume(eng);
+    std::uniform_real_distribution<float> distr(FLOAT_MIN, FLOAT_MAX);
+    rand_value.emplace((distr(eng) * 1000.0) / 1000.0, std::tuple<std::uint32_t, std::uint32_t>(type, volume));
+  }
+  std::vector<std::tuple<std::uint32_t, float, std::uint32_t>> v_rand_value;
+  v_rand_value.reserve(rand_value.size());
+  auto iter = rand_value.begin();
+  for (; iter != rand_value.cend(); ++iter) {
+    v_rand_value.emplace_back(std::make_tuple(std::get<0>(iter->second), iter->first, std::get<1>(iter->second)));
+  }
+  return std::make_shared<std::vector<std::tuple<std::uint32_t, float, std::uint32_t>>>(v_rand_value);
+}
+
+static void TestSpeed(std::uint32_t size) {
+  DepthOfMarket dop;
+  std::random_device rd;
+  std::default_random_engine eng(rd());
+  std::cout << "TEST WITH " << size << " value" << std::endl;
+  auto rand_vector = CreateRandValue(size);
+  std::uniform_int_distribution<std::uint32_t> type_range(0, rand_vector->size()/10);
   {
+    LOG_DURATION("Testing add");
+    for (size_t i = 0; i < rand_vector->size(); ++i) {
+      dop.AddLevel(std::get<0>((*rand_vector)[i]),
+                   std::get<1>((*rand_vector)[i]),
+                   std::get<2>((*rand_vector)[i]));
+    }
   }
-
-  ~LogDuration() {
-    auto finish = steady_clock::now();
-    auto dur = finish - start;
-    cerr << message
-         << duration_cast<milliseconds>(dur).count()
-         << " ms" << endl;
+  {
+    LOG_DURATION("Testing change");
+    for (size_t i = 0; i < rand_vector->size()/10; ++i) {
+      std::uint32_t type = type_range(eng);
+      dop.ChangeLevel(std::get<0>((*rand_vector)[type]),
+                   std::get<1>((*rand_vector)[type]),
+                   std::get<2>((*rand_vector)[i]));
+    }
   }
- private:
-  string message;
-  steady_clock::time_point start;
-};
-
-#define UNIQ_ID_IMPL(lineno) _a_local_var_##lineno
-#define UNIQ_ID(lineno) UNIQ_ID_IMPL(lineno)
-
-#define LOG_DURATION(message) \
-  LogDuration UNIQ_ID(__LINE__){message};
-
-constexpr int FLOAT_MIN = 0;
-constexpr int FLOAT_MAX = 100;
+  {
+    LOG_DURATION("Testing erase");
+    for (size_t i = 0; i < rand_vector->size() / 100; ++i) {
+      std::uint32_t type = type_range(eng);
+      dop.EraseLevel(std::get<0>((*rand_vector)[type]),
+                     std::get<1>((*rand_vector)[type]));
+    }
+  }
+  std::this_thread::sleep_for(1000ms);
+}
 
 // Example
 int main() {
   DepthOfMarket dop;
-  std::random_device rd;
-  std::default_random_engine eng(rd());
-
-  std::vector<std::tuple<int, float, int>> rand_value;
-  rand_value.reserve(10000);
-  for (int n = 0; n < 10000; ++n) {
-    std::uniform_int_distribution<int> type_range(0, 1);
-    int type = type_range(eng);
-    std::uniform_int_distribution<int> type_volume(50, 10000);
-    int volume = type_volume(eng);
-    std::uniform_real_distribution<float> distr(FLOAT_MIN, FLOAT_MAX);
-    rand_value.emplace_back(std::tuple<int, float, int>(type, (distr(eng) * 1000.0) / 1000.0, volume));
-  }
-  std::map<float, std::uint32_t> rand_map;
-  LOG_DURATION("test");
-  for (int i = 0; i < 10000; ++i) {
-    rand_map.emplace(std::get<1>(rand_value[i]), std::get<2>(rand_value[i]));
-    dop.AddLevel(std::get<0>(rand_value[i]), std::get<1>(rand_value[i]), std::get<2>(rand_value[i]));
-  }
-
 
   // add
   dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 1.2, 100);
@@ -79,8 +97,17 @@ int main() {
   dop.EraseLevel(DepthOfMarket::Types::SELL_CODE, 1.0);
   dop.EraseLevel(DepthOfMarket::Types::BUY_CODE, 1.0);
 
-   print
+  // print
   dop.PrintLevels(DepthOfMarket::Types::BUY_CODE);
   dop.PrintLevels(DepthOfMarket::Types::SELL_CODE);
+  std::cout << std::endl;
+  TestSpeed(100);
+  std::cout << std::endl;
+  TestSpeed(1000);
+  std::cout << std::endl;
+  TestSpeed(10000);
+  std::cout << std::endl;
+  TestSpeed(100000);
+  std::cout << std::endl;
   return EXIT_SUCCESS;
 }

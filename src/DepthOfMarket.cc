@@ -21,9 +21,9 @@ void DepthOfMarket::AddLevel(std::uint8_t type,
                              float price,
                              std::uint32_t volume) {
   auto &target = GetLevelsByType(type);
-  if (target.contains(price)) {
-    throw std::runtime_error("Error: value already exit");
-  }
+//  if (target.contains(price)) {
+//    throw std::runtime_error("Error: value already exit");
+//  }
   target.emplace(price, volume);
 }
 
@@ -31,9 +31,9 @@ void DepthOfMarket::ChangeLevel(std::uint8_t type,
                                 float price,
                                 std::uint32_t new_volume) {
   auto &target = GetLevelsByType(type);
-  if (!target.contains(price)) {
-    throw std::runtime_error("Error: value no exit");
-  }
+//  if (!target.contains(price)) {
+//    throw std::runtime_error("Error: value no exit");
+//  }
   target.at(price) = new_volume;
 }
 
@@ -57,7 +57,7 @@ void DepthOfMarket::PrintLevels(std::uint8_t type) {
     }
   } else {
     auto current = target.crbegin();
-    for (;current < target.crend(); ++current){
+    for (;current != target.crend(); ++current){
       std::cout << "BUY " << std::internal;
       print(*current);
     }
