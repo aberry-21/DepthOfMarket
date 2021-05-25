@@ -9,15 +9,6 @@
 #include "includes/DepthOfMarket.h"
 #include "includes/LogDuration.h"
 
-/*
- * Также есть вариант реализации на std::map, она будет работать быстрее, так как
- * она является красно - черным деревом, вставка и удаление за log n
- * Но так как в биржевом стакане также важна итерация по уровням, я решил использовать
- * ассоциативный упорядоченный вектор boost::flat_map, который уступает
- * std::map в удалении элементов и их добавлении, однако итерация в разы быстрее.
- *
- * PS Также для роста производительности я закомментировал try catch в функциях.
- */
 constexpr std::uint32_t FLOAT_MIN = 0;
 constexpr std::uint32_t FLOAT_MAX = 100;
 
@@ -82,12 +73,14 @@ int main() {
   DepthOfMarket dop;
 
   // add
-  dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 1.2, 100);
-  dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 1.12, 10);
+  dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 0.1, 10);
   dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 1.0, 10);
-  dop.AddLevel(DepthOfMarket::Types::BUY_CODE, 1.0, 150);
+  dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 1.12, 10);
+  dop.AddLevel(DepthOfMarket::Types::SELL_CODE, 1.2, 100);
   dop.AddLevel(DepthOfMarket::Types::BUY_CODE, 1.23, 150);
   dop.AddLevel(DepthOfMarket::Types::BUY_CODE, 2.12, 10);
+  dop.AddLevel(DepthOfMarket::Types::BUY_CODE, 1.0, 150);
+  dop.AddLevel(DepthOfMarket::Types::BUY_CODE, 0.1, 1110);
 
   // change
   dop.ChangeLevel(DepthOfMarket::Types::SELL_CODE, 1.2, 155);
@@ -100,6 +93,8 @@ int main() {
   // print
   dop.PrintLevels(DepthOfMarket::Types::BUY_CODE);
   dop.PrintLevels(DepthOfMarket::Types::SELL_CODE);
+
+  // Speed test
   std::this_thread::sleep_for(1000ms);
   std::cout << std::endl;
   TestSpeed(100);
