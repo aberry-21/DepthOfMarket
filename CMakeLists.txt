@@ -10,11 +10,13 @@ add_compile_options(
     -Wextra
 )
 
+set(Boost_INCLUDE_DIR  /Users/aberry/.brew/Cellar/boost/1.75.0_3/include)
+set(Boost_LIBRARY_DIR /Users/aberry/.brew/Cellar/boost/1.75.0_3/lib/)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
 
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 

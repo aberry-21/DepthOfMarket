@@ -100,6 +100,7 @@ int main() {
   // print
   dop.PrintLevels(DepthOfMarket::Types::BUY_CODE);
   dop.PrintLevels(DepthOfMarket::Types::SELL_CODE);
+  std::this_thread::sleep_for(1000ms);
   std::cout << std::endl;
   TestSpeed(100);
   std::cout << std::endl;
