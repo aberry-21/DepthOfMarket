@@ -1,1 +1,0 @@
-/usr/bin/clang++  -fsanitize=address -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/depth_of_market.dir/src/DepthOfMarket.cc.o CMakeFiles/depth_of_market.dir/src/main.cc.o -o depth_of_market 
